@@ -1,11 +1,1720 @@
 <!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>PakePlus</title>
-    </head>
-    <body>
-        Hello World
-    </body>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>网页应用管理器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #1a1a1a;
+            --primary-light: #333333;
+            --accent: #0066ff;
+            --accent-hover: #0052cc;
+            --bg: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --bg-tertiary: #f0f2f5;
+            --border: #e5e7eb;
+            --text: #1a1a1a;
+            --text-secondary: #6b7280;
+            --text-light: #9ca3af;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --shadow: 0 2px 8px rgba(0,0,0,0.08);
+            --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+            --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* 主布局 */
+        .app-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* 侧边栏 */
+        .sidebar {
+            width: 260px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            transition: var(--transition);
+            position: relative;
+            z-index: 100;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .sidebar-section {
+            margin-bottom: 24px;
+        }
+
+        .sidebar-section-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+            padding: 0 8px;
+        }
+
+        .folder-list {
+            list-style: none;
+        }
+
+        .folder-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 12px;
+            cursor: pointer;
+            transition: var(--transition);
+            border: 1px solid transparent;
+            margin-bottom: 2px;
+        }
+
+        .folder-item:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .folder-item.active {
+            background: var(--bg);
+            border-color: var(--border);
+        }
+
+        .folder-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+        }
+
+        .folder-icon svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .folder-name {
+            flex: 1;
+            font-size: 14px;
+            color: var(--text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .folder-count {
+            font-size: 12px;
+            color: var(--text-light);
+            background: var(--bg-tertiary);
+            padding: 2px 8px;
+            margin-left: 8px;
+        }
+
+        .folder-actions {
+            display: flex;
+            gap: 4px;
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .folder-item:hover .folder-actions {
+            opacity: 1;
+        }
+
+        .folder-action-btn {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: var(--transition);
+        }
+
+        .folder-action-btn:hover {
+            color: var(--text);
+            background: var(--bg-tertiary);
+        }
+
+        .folder-action-btn.danger:hover {
+            color: var(--danger);
+        }
+
+        .new-folder-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            padding: 10px 12px;
+            background: transparent;
+            border: 1px dashed var(--border);
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 14px;
+            transition: var(--transition);
+            margin-top: 8px;
+        }
+
+        .new-folder-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(0, 102, 255, 0.05);
+        }
+
+        /* 主内容区 */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        /* 顶部栏 */
+        .topbar {
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+            max-width: 400px;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px 16px 10px 40px;
+            border: 1px solid var(--border);
+            background: var(--bg-secondary);
+            font-size: 14px;
+            color: var(--text);
+            transition: var(--transition);
+            outline: none;
+        }
+
+        .search-input:focus {
+            border-color: var(--accent);
+            background: var(--bg);
+            box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-light);
+            width: 18px;
+            height: 18px;
+        }
+
+        .topbar-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--text);
+            cursor: pointer;
+            transition: var(--transition);
+            white-space: nowrap;
+        }
+
+        .btn:hover {
+            background: var(--bg-secondary);
+            border-color: var(--text-light);
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+            border-color: var(--accent-hover);
+        }
+
+        .btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* 内容区域 */
+        .content-area {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+        }
+
+        .content-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .content-title {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .content-count {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* 应用网格 */
+        .apps-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        .app-card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            transition: var(--transition);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .app-card:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
+        }
+
+        .app-card-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .app-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--bg-tertiary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 18px;
+        }
+
+        .app-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .app-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .app-meta {
+            font-size: 12px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .app-type {
+            padding: 2px 6px;
+            background: var(--bg-tertiary);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .app-card-body {
+            padding: 12px 16px;
+        }
+
+        .app-preview {
+            font-size: 13px;
+            color: var(--text-secondary);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1.5;
+        }
+
+        .app-card-footer {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 8px;
+            background: var(--bg-secondary);
+        }
+
+        .app-action-btn {
+            flex: 1;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            font-size: 13px;
+            color: var(--text);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .app-action-btn:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .app-action-btn.primary {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+
+        .app-action-btn.primary:hover {
+            background: var(--accent-hover);
+        }
+
+        .app-action-btn svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .empty-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 20px;
+            color: var(--text-light);
+        }
+
+        .empty-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        .empty-text {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* 模态框 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: var(--transition);
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: var(--bg);
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            transform: scale(0.95);
+            transition: var(--transition);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: var(--transition);
+        }
+
+        .modal-close:hover {
+            color: var(--text);
+            background: var(--bg-tertiary);
+        }
+
+        .modal-body {
+            padding: 24px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        /* 表单 */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            font-size: 14px;
+            color: var(--text);
+            transition: var(--transition);
+            outline: none;
+        }
+
+        .form-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1);
+        }
+
+        .form-textarea {
+            min-height: 200px;
+            resize: vertical;
+            font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            font-size: 14px;
+            color: var(--text);
+            cursor: pointer;
+            outline: none;
+            transition: var(--transition);
+        }
+
+        .form-select:focus {
+            border-color: var(--accent);
+        }
+
+        /* 预览模态框 */
+        .preview-modal {
+            max-width: 95vw;
+            max-height: 95vh;
+            width: 100%;
+            height: 90vh;
+        }
+
+        .preview-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: white;
+        }
+
+        /* 移动端菜单按钮 */
+        .mobile-menu-btn {
+            display: none;
+            width: 40px;
+            height: 40px;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            color: var(--text);
+        }
+
+        .mobile-menu-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* 移动端遮罩 */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 99;
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .sidebar-overlay.active {
+            opacity: 1;
+        }
+
+        /* Toast 通知 */
+        .toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .toast {
+            padding: 12px 20px;
+            background: var(--text);
+            color: white;
+            font-size: 14px;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transform: translateX(120%);
+            transition: var(--transition);
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.success {
+            background: var(--success);
+        }
+
+        .toast.error {
+            background: var(--danger);
+        }
+
+        .toast svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* 筛选标签 */
+        .filter-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .filter-tag {
+            padding: 6px 12px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            font-size: 13px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .filter-tag:hover {
+            border-color: var(--text-light);
+        }
+
+        .filter-tag.active {
+            background: var(--text);
+            border-color: var(--text);
+            color: white;
+        }
+
+        /* 确认对话框 */
+        .confirm-modal .modal {
+            max-width: 400px;
+        }
+
+        .confirm-text {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: -260px;
+                top: 0;
+                bottom: 0;
+                height: 100vh;
+            }
+
+            .sidebar.open {
+                left: 0;
+            }
+
+            .sidebar-overlay {
+                display: block;
+            }
+
+            .mobile-menu-btn {
+                display: flex;
+            }
+
+            .topbar {
+                padding: 12px 16px;
+            }
+
+            .search-box {
+                order: 1;
+                max-width: none;
+            }
+
+            .topbar-actions {
+                order: 0;
+            }
+
+            .content-area {
+                padding: 16px;
+            }
+
+            .apps-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .modal {
+                max-height: 100vh;
+                height: auto;
+            }
+
+            .preview-modal {
+                height: 100vh;
+                max-height: 100vh;
+            }
+
+            .toast-container {
+                left: 16px;
+                right: 16px;
+                bottom: 16px;
+            }
+
+            .toast {
+                transform: translateY(120%);
+            }
+
+            .toast.show {
+                transform: translateY(0);
+            }
+        }
+
+        /* 动画 */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { 
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .app-card {
+            animation: slideUp 0.3s ease forwards;
+        }
+
+        .app-card:nth-child(1) { animation-delay: 0.05s; }
+        .app-card:nth-child(2) { animation-delay: 0.1s; }
+        .app-card:nth-child(3) { animation-delay: 0.15s; }
+        .app-card:nth-child(4) { animation-delay: 0.2s; }
+        .app-card:nth-child(5) { animation-delay: 0.25s; }
+        .app-card:nth-child(6) { animation-delay: 0.3s; }
+
+        /* 滚动条 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-light);
+        }
+
+        /* 编辑器模式切换 */
+        .editor-tabs {
+            display: flex;
+            border: 1px solid var(--border);
+            margin-bottom: 12px;
+        }
+
+        .editor-tab {
+            flex: 1;
+            padding: 10px;
+            background: var(--bg-secondary);
+            border: none;
+            font-size: 13px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .editor-tab:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .editor-tab.active {
+            background: var(--bg);
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        /* 代码高亮提示 */
+        .code-hint {
+            font-size: 12px;
+            color: var(--text-light);
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 移动端遮罩 -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+        <!-- 侧边栏 -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">H</div>
+                    <span>应用管理器</span>
+                </div>
+            </div>
+            <div class="sidebar-content">
+                <div class="sidebar-section">
+                    <div class="sidebar-section-title">文件夹</div>
+                    <ul class="folder-list" id="folderList">
+                        <!-- 动态生成 -->
+                    </ul>
+                    <button class="new-folder-btn" id="newFolderBtn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        新建文件夹
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 主内容区 -->
+        <main class="main-content">
+            <!-- 顶部栏 -->
+            <div class="topbar">
+                <button class="mobile-menu-btn" id="mobileMenuBtn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
+                <div class="search-box">
+                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" class="search-input" id="searchInput" placeholder="搜索应用名称...">
+                </div>
+                <div class="topbar-actions">
+                    <button class="btn" id="importFileBtn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        导入文件
+                    </button>
+                    <button class="btn btn-primary" id="newAppBtn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        新建应用
+                    </button>
+                </div>
+            </div>
+
+            <!-- 内容区域 -->
+            <div class="content-area">
+                <div class="content-header">
+                    <div>
+                        <h1 class="content-title" id="contentTitle">全部应用</h1>
+                        <p class="content-count" id="contentCount">0 个应用</p>
+                    </div>
+                </div>
+
+                <!-- 筛选标签 -->
+                <div class="filter-tags" id="filterTags">
+                    <button class="filter-tag active" data-filter="all">全部</button>
+                    <button class="filter-tag" data-filter="html">HTML</button>
+                    <button class="filter-tag" data-filter="txt">TXT</button>
+                </div>
+
+                <!-- 应用网格 -->
+                <div class="apps-grid" id="appsGrid">
+                    <!-- 动态生成 -->
+                </div>
+
+                <!-- 空状态 -->
+                <div class="empty-state" id="emptyState" style="display: none;">
+                    <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <rect x="3" y="3" width="18" height="18" rx="0"></rect>
+                        <line x1="12" y1="8" x2="12" y2="16"></line>
+                        <line x1="8" y1="12" x2="16" y2="12"></line>
+                    </svg>
+                    <h3 class="empty-title">暂无应用</h3>
+                    <p class="empty-text">点击"新建应用"或"导入文件"开始使用</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast 容器 -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- 新建/编辑应用模态框 -->
+    <div class="modal-overlay" id="appModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title" id="appModalTitle">新建应用</h2>
+                <button class="modal-close" onclick="closeModal('appModal')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">应用名称</label>
+                    <input type="text" class="form-input" id="appName" placeholder="输入应用名称">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">所属文件夹</label>
+                    <select class="form-select" id="appFolder">
+                        <!-- 动态生成 -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">文件类型</label>
+                    <div class="editor-tabs">
+                        <button class="editor-tab active" data-type="html">HTML</button>
+                        <button class="editor-tab" data-type="txt">TXT</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">内容</label>
+                    <textarea class="form-input form-textarea" id="appContent" placeholder="粘贴 HTML 代码或输入文本内容..."></textarea>
+                    <p class="code-hint">提示：HTML 格式可直接预览运行，TXT 格式可编辑保存</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="closeModal('appModal')">取消</button>
+                <button class="btn btn-primary" id="saveAppBtn">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 预览模态框 -->
+    <div class="modal-overlay" id="previewModal">
+        <div class="modal preview-modal">
+            <div class="modal-header">
+                <h2 class="modal-title" id="previewTitle">预览</h2>
+                <button class="modal-close" onclick="closeModal('previewModal')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body" style="padding: 0; flex: 1; display: flex; flex-direction: column;">
+                <iframe class="preview-frame" id="previewFrame"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- 新建文件夹模态框 -->
+    <div class="modal-overlay" id="folderModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title" id="folderModalTitle">新建文件夹</h2>
+                <button class="modal-close" onclick="closeModal('folderModal')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">文件夹名称</label>
+                    <input type="text" class="form-input" id="folderName" placeholder="输入文件夹名称">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="closeModal('folderModal')">取消</button>
+                <button class="btn btn-primary" id="saveFolderBtn">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 确认删除模态框 -->
+    <div class="modal-overlay confirm-modal" id="confirmModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">确认删除</h2>
+                <button class="modal-close" onclick="closeModal('confirmModal')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="confirm-text" id="confirmText">确定要删除此项吗？此操作无法撤销。</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="closeModal('confirmModal')">取消</button>
+                <button class="btn" style="background: var(--danger); border-color: var(--danger); color: white;" id="confirmDeleteBtn">删除</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 隐藏的文件输入 -->
+    <input type="file" id="fileInput" accept=".html,.htm,.txt" multiple style="display: none;">
+
+    <script>
+        // 数据存储
+        const STORAGE_KEYS = {
+            APPS: 'html_app_manager_apps',
+            FOLDERS: 'html_app_manager_folders'
+        };
+
+        // 默认文件夹
+        const DEFAULT_FOLDERS = [
+            { id: 'all', name: '全部应用', icon: 'grid', isDefault: true },
+            { id: 'default', name: '默认文件夹', icon: 'folder', isDefault: false }
+        ];
+
+        // 状态管理
+        let state = {
+            apps: [],
+            folders: [],
+            currentFolder: 'all',
+            currentFilter: 'all',
+            searchQuery: '',
+            editingApp: null,
+            editingFolder: null
+        };
+
+        // 初始化
+        function init() {
+            loadData();
+            renderFolders();
+            renderApps();
+            bindEvents();
+        }
+
+        // 加载数据
+        function loadData() {
+            const savedApps = localStorage.getItem(STORAGE_KEYS.APPS);
+            const savedFolders = localStorage.getItem(STORAGE_KEYS.FOLDERS);
+
+            state.apps = savedApps ? JSON.parse(savedApps) : [];
+            state.folders = savedFolders ? JSON.parse(savedFolders) : [...DEFAULT_FOLDERS];
+        }
+
+        // 保存数据
+        function saveData() {
+            localStorage.setItem(STORAGE_KEYS.APPS, JSON.stringify(state.apps));
+            localStorage.setItem(STORAGE_KEYS.FOLDERS, JSON.stringify(state.folders));
+        }
+
+        // 生成唯一ID
+        function generateId() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2);
+        }
+
+        // 显示 Toast
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            const icons = {
+                success: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>',
+                error: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>',
+                info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>'
+            };
+
+            toast.innerHTML = `${icons[type] || icons.info}<span>${message}</span>`;
+            container.appendChild(toast);
+
+            requestAnimationFrame(() => {
+                toast.classList.add('show');
+            });
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // 打开模态框
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        // 关闭模态框
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        // 渲染文件夹列表
+        function renderFolders() {
+            const folderList = document.getElementById('folderList');
+            const appFolderSelect = document.getElementById('appFolder');
+
+            folderList.innerHTML = state.folders.map(folder => {
+                const count = folder.id === 'all' 
+                    ? state.apps.length 
+                    : state.apps.filter(app => app.folderId === folder.id).length;
+
+                return `
+                    <li class="folder-item ${state.currentFolder === folder.id ? 'active' : ''}" data-id="${folder.id}">
+                        <div class="folder-icon">
+                            ${folder.icon === 'grid' 
+                                ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>'
+                                : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>'
+                            }
+                        </div>
+                        <span class="folder-name">${folder.name}</span>
+                        <span class="folder-count">${count}</span>
+                        ${!folder.isDefault ? `
+                            <div class="folder-actions">
+                                <button class="folder-action-btn" onclick="event.stopPropagation(); editFolder('${folder.id}')" title="编辑">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                    </svg>
+                                </button>
+                                <button class="folder-action-btn danger" onclick="event.stopPropagation(); deleteFolder('${folder.id}')" title="删除">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        ` : ''}
+                    </li>
+                `;
+            }).join('');
+
+            // 更新文件夹选择下拉框
+            appFolderSelect.innerHTML = state.folders
+                .filter(f => f.id !== 'all')
+                .map(folder => `<option value="${folder.id}">${folder.name}</option>`)
+                .join('');
+        }
+
+        // 获取筛选后的应用
+        function getFilteredApps() {
+            let apps = [...state.apps];
+
+            // 文件夹筛选
+            if (state.currentFolder !== 'all') {
+                apps = apps.filter(app => app.folderId === state.currentFolder);
+            }
+
+            // 类型筛选
+            if (state.currentFilter !== 'all') {
+                apps = apps.filter(app => app.type === state.currentFilter);
+            }
+
+            // 搜索筛选
+            if (state.searchQuery) {
+                const query = state.searchQuery.toLowerCase();
+                apps = apps.filter(app => app.name.toLowerCase().includes(query));
+            }
+
+            return apps;
+        }
+
+        // 渲染应用列表
+        function renderApps() {
+            const appsGrid = document.getElementById('appsGrid');
+            const emptyState = document.getElementById('emptyState');
+            const contentCount = document.getElementById('contentCount');
+            const filteredApps = getFilteredApps();
+
+            contentCount.textContent = `${filteredApps.length} 个应用`;
+
+            if (filteredApps.length === 0) {
+                appsGrid.innerHTML = '';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+
+            appsGrid.innerHTML = filteredApps.map(app => {
+                const preview = app.type === 'html' 
+                    ? 'HTML 网页应用'
+                    : app.content.substring(0, 100) + (app.content.length > 100 ? '...' : '');
+
+                return `
+                    <div class="app-card" data-id="${app.id}">
+                        <div class="app-card-header">
+                            <div class="app-icon">${app.type === 'html' ? '🌐' : '📄'}</div>
+                            <div class="app-info">
+                                <div class="app-name">${app.name}</div>
+                                <div class="app-meta">
+                                    <span class="app-type">${app.type.toUpperCase()}</span>
+                                    <span>${formatDate(app.updatedAt)}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="app-card-body">
+                            <p class="app-preview">${preview}</p>
+                        </div>
+                        <div class="app-card-footer">
+                            <button class="app-action-btn" onclick="editApp('${app.id}')" title="编辑">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                </svg>
+                                编辑
+                            </button>
+                            ${app.type === 'html' ? `
+                                <button class="app-action-btn primary" onclick="previewApp('${app.id}')" title="预览">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                                    </svg>
+                                    预览
+                                </button>
+                            ` : ''}
+                            <button class="app-action-btn" onclick="openInBrowser('${app.id}')" title="新窗口打开">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                    <polyline points="15 3 21 3 21 9"></polyline>
+                                    <line x1="10" y1="14" x2="21" y2="3"></line>
+                                </svg>
+                            </button>
+                            <button class="app-action-btn" onclick="deleteApp('${app.id}')" title="删除">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 格式化日期
+        function formatDate(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diff = now - date;
+
+            if (diff < 60000) return '刚刚';
+            if (diff < 3600000) return `${Math.floor(diff / 60000)} 分钟前`;
+            if (diff < 86400000) return `${Math.floor(diff / 3600000)} 小时前`;
+            if (diff < 604800000) return `${Math.floor(diff / 86400000)} 天前`;
+
+            return date.toLocaleDateString('zh-CN');
+        }
+
+        // 新建应用
+        function newApp() {
+            state.editingApp = null;
+            document.getElementById('appModalTitle').textContent = '新建应用';
+            document.getElementById('appName').value = '';
+            document.getElementById('appContent').value = '';
+            document.getElementById('appFolder').value = state.currentFolder === 'all' ? 'default' : state.currentFolder;
+            
+            // 重置类型选择
+            document.querySelectorAll('.editor-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.type === 'html');
+            });
+
+            openModal('appModal');
+        }
+
+        // 编辑应用
+        function editApp(id) {
+            const app = state.apps.find(a => a.id === id);
+            if (!app) return;
+
+            state.editingApp = app;
+            document.getElementById('appModalTitle').textContent = '编辑应用';
+            document.getElementById('appName').value = app.name;
+            document.getElementById('appContent').value = app.content;
+            document.getElementById('appFolder').value = app.folderId;
+
+            // 设置类型
+            document.querySelectorAll('.editor-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.type === app.type);
+            });
+
+            openModal('appModal');
+        }
+
+        // 保存应用
+        function saveApp() {
+            const name = document.getElementById('appName').value.trim();
+            const content = document.getElementById('appContent').value;
+            const folderId = document.getElementById('appFolder').value;
+            const activeTab = document.querySelector('.editor-tab.active');
+            const type = activeTab ? activeTab.dataset.type : 'html';
+
+            if (!name) {
+                showToast('请输入应用名称', 'error');
+                return;
+            }
+
+            if (state.editingApp) {
+                // 更新现有应用
+                const index = state.apps.findIndex(a => a.id === state.editingApp.id);
+                if (index !== -1) {
+                    state.apps[index] = {
+                        ...state.apps[index],
+                        name,
+                        content,
+                        folderId,
+                        type,
+                        updatedAt: Date.now()
+                    };
+                }
+                showToast('应用已更新', 'success');
+            } else {
+                // 创建新应用
+                state.apps.push({
+                    id: generateId(),
+                    name,
+                    content,
+                    folderId,
+                    type,
+                    createdAt: Date.now(),
+                    updatedAt: Date.now()
+                });
+                showToast('应用已创建', 'success');
+            }
+
+            saveData();
+            renderFolders();
+            renderApps();
+            closeModal('appModal');
+        }
+
+        // 删除应用
+        function deleteApp(id) {
+            const app = state.apps.find(a => a.id === id);
+            if (!app) return;
+
+            document.getElementById('confirmText').textContent = `确定要删除应用"${app.name}"吗？此操作无法撤销。`;
+            document.getElementById('confirmDeleteBtn').onclick = () => {
+                state.apps = state.apps.filter(a => a.id !== id);
+                saveData();
+                renderFolders();
+                renderApps();
+                closeModal('confirmModal');
+                showToast('应用已删除', 'success');
+            };
+            openModal('confirmModal');
+        }
+
+        // 预览应用
+        function previewApp(id) {
+            const app = state.apps.find(a => a.id === id);
+            if (!app || app.type !== 'html') return;
+
+            document.getElementById('previewTitle').textContent = app.name;
+            const frame = document.getElementById('previewFrame');
+            
+            // 使用 srcdoc 来加载内容
+            frame.srcdoc = app.content;
+            
+            openModal('previewModal');
+        }
+
+        // 在浏览器中打开
+        function openInBrowser(id) {
+            const app = state.apps.find(a => a.id === id);
+            if (!app) return;
+
+            let content = app.content;
+            if (app.type === 'txt') {
+                content = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${app.name}</title><style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC',sans-serif;padding:40px;max-width:800px;margin:0 auto;line-height:1.8;white-space:pre-wrap;word-wrap:break-word;}</style></head><body>${escapeHtml(app.content)}</body></html>`;
+            }
+
+            const blob = new Blob([content], { type: 'text/html;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+        }
+
+        // HTML 转义
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 新建文件夹
+        function newFolder() {
+            state.editingFolder = null;
+            document.getElementById('folderModalTitle').textContent = '新建文件夹';
+            document.getElementById('folderName').value = '';
+            openModal('folderModal');
+        }
+
+        // 编辑文件夹
+        function editFolder(id) {
+            const folder = state.folders.find(f => f.id === id);
+            if (!folder || folder.isDefault) return;
+
+            state.editingFolder = folder;
+            document.getElementById('folderModalTitle').textContent = '编辑文件夹';
+            document.getElementById('folderName').value = folder.name;
+            openModal('folderModal');
+        }
+
+        // 保存文件夹
+        function saveFolder() {
+            const name = document.getElementById('folderName').value.trim();
+            if (!name) {
+                showToast('请输入文件夹名称', 'error');
+                return;
+            }
+
+            if (state.editingFolder) {
+                const index = state.folders.findIndex(f => f.id === state.editingFolder.id);
+                if (index !== -1) {
+                    state.folders[index].name = name;
+                }
+                showToast('文件夹已更新', 'success');
+            } else {
+                state.folders.push({
+                    id: generateId(),
+                    name,
+                    icon: 'folder',
+                    isDefault: false
+                });
+                showToast('文件夹已创建', 'success');
+            }
+
+            saveData();
+            renderFolders();
+            closeModal('folderModal');
+        }
+
+        // 删除文件夹
+        function deleteFolder(id) {
+            const folder = state.folders.find(f => f.id === id);
+            if (!folder || folder.isDefault) return;
+
+            const appCount = state.apps.filter(a => a.folderId === id).length;
+            const message = appCount > 0 
+                ? `确定要删除文件夹"${folder.name}"吗？文件夹内的 ${appCount} 个应用将移至默认文件夹。`
+                : `确定要删除文件夹"${folder.name}"吗？`;
+
+            document.getElementById('confirmText').textContent = message;
+            document.getElementById('confirmDeleteBtn').onclick = () => {
+                // 将应用移至默认文件夹
+                state.apps.forEach(app => {
+                    if (app.folderId === id) {
+                        app.folderId = 'default';
+                    }
+                });
+
+                state.folders = state.folders.filter(f => f.id !== id);
+                
+                if (state.currentFolder === id) {
+                    state.currentFolder = 'all';
+                }
+
+                saveData();
+                renderFolders();
+                renderApps();
+                closeModal('confirmModal');
+                showToast('文件夹已删除', 'success');
+            };
+            openModal('confirmModal');
+        }
+
+        // 导入文件
+        function importFiles(files) {
+            Array.from(files).forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const content = e.target.result;
+                    const ext = file.name.split('.').pop().toLowerCase();
+                    const type = ext === 'txt' ? 'txt' : 'html';
+                    const name = file.name.replace(/\.[^/.]+$/, '');
+
+                    state.apps.push({
+                        id: generateId(),
+                        name,
+                        content,
+                        folderId: state.currentFolder === 'all' ? 'default' : state.currentFolder,
+                        type,
+                        createdAt: Date.now(),
+                        updatedAt: Date.now()
+                    });
+
+                    saveData();
+                    renderFolders();
+                    renderApps();
+                    showToast(`已导入: ${name}`, 'success');
+                };
+                reader.readAsText(file);
+            });
+        }
+
+        // 绑定事件
+        function bindEvents() {
+            // 移动端菜单
+            document.getElementById('mobileMenuBtn').addEventListener('click', () => {
+                document.getElementById('sidebar').classList.add('open');
+                document.getElementById('sidebarOverlay').classList.add('active');
+            });
+
+            document.getElementById('sidebarOverlay').addEventListener('click', () => {
+                document.getElementById('sidebar').classList.remove('open');
+                document.getElementById('sidebarOverlay').classList.remove('active');
+            });
+
+            // 文件夹点击
+            document.getElementById('folderList').addEventListener('click', (e) => {
+                const item = e.target.closest('.folder-item');
+                if (item) {
+                    state.currentFolder = item.dataset.id;
+                    
+                    // 更新标题
+                    const folder = state.folders.find(f => f.id === state.currentFolder);
+                    document.getElementById('contentTitle').textContent = folder ? folder.name : '全部应用';
+                    
+                    renderFolders();
+                    renderApps();
+
+                    // 移动端关闭侧边栏
+                    if (window.innerWidth <= 768) {
+                        document.getElementById('sidebar').classList.remove('open');
+                        document.getElementById('sidebarOverlay').classList.remove('active');
+                    }
+                }
+            });
+
+            // 搜索
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                state.searchQuery = e.target.value;
+                renderApps();
+            });
+
+            // 筛选标签
+            document.getElementById('filterTags').addEventListener('click', (e) => {
+                const tag = e.target.closest('.filter-tag');
+                if (tag) {
+                    state.currentFilter = tag.dataset.filter;
+                    document.querySelectorAll('.filter-tag').forEach(t => t.classList.remove('active'));
+                    tag.classList.add('active');
+                    renderApps();
+                }
+            });
+
+            // 新建应用
+            document.getElementById('newAppBtn').addEventListener('click', newApp);
+            document.getElementById('saveAppBtn').addEventListener('click', saveApp);
+
+            // 新建文件夹
+            document.getElementById('newFolderBtn').addEventListener('click', newFolder);
+            document.getElementById('saveFolderBtn').addEventListener('click', saveFolder);
+
+            // 类型切换
+            document.querySelectorAll('.editor-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.editor-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                });
+            });
+
+            // 导入文件按钮
+            document.getElementById('importFileBtn').addEventListener('click', () => {
+                document.getElementById('fileInput').click();
+            });
+
+            // 文件选择
+            document.getElementById('fileInput').addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    importFiles(e.target.files);
+                    e.target.value = '';
+                }
+            });
+
+            // ESC 关闭模态框
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    document.querySelectorAll('.modal-overlay.active').forEach(modal => {
+                        modal.classList.remove('active');
+                    });
+                    document.body.style.overflow = '';
+                }
+            });
+
+            // 点击模态框背景关闭
+            document.querySelectorAll('.modal-overlay').forEach(overlay => {
+                overlay.addEventListener('click', (e) => {
+                    if (e.target === overlay) {
+                        overlay.classList.remove('active');
+                        document.body.style.overflow = '';
+                    }
+                });
+            });
+        }
+
+        // 启动应用
+        init();
+    </script>
+</body>
 </html>
